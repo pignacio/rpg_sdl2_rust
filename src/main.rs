@@ -1,17 +1,20 @@
-use sdl2::{event::Event, EventPump, keyboard::Keycode, pixels::Color, rect::Rect};
-use sdl2::keyboard::{KeyboardState, Scancode};
+use sdl2::{pixels::Color, rect::Rect};
 
 use gfx::TextureLoader;
+use crate::data::GameConfig;
+use crate::error::Error;
 use crate::event::{EventListener, GameState, MoveListener, PumpProcessor, QuitListener};
 
-pub mod gfx;
+pub mod data;
+pub mod error;
 pub mod event;
+pub mod gfx;
 
 fn main() {
     run().unwrap();
 }
 
-fn run() -> Result<(), String> {
+fn run() -> Result<(), Error> {
     let sdl2 = sdl2::init()?;
     let timer = sdl2.timer()?;
     let video = sdl2.video()?;
@@ -21,12 +24,15 @@ fn run() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG);
 
-    let mut pump = sdl2.event_pump()?;
+    let config : GameConfig = data::load_file(&"config.json")?;
+    println!("{:?}", config);
+    data::write_file(&"config.bin", &config)?;
+    let pump = sdl2.event_pump()?;
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
     let loader = TextureLoader::new(canvas.texture_creator());
 
-    let character = loader.load("character.png")?;
+    let character = loader.load(&config.character)?;
     let mut state = GameState::new();
 
     let mut listeners: Vec<Box<dyn EventListener>> = Vec::new();
