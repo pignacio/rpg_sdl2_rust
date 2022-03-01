@@ -1,37 +1,57 @@
+use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
+
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::{KeyboardState, Keycode, Scancode};
+use sdl2::render::RenderTarget;
+use sdl2::video::Window;
+use crate::Scene;
 
 pub struct PumpProcessor {
     pump: EventPump,
-    listeners: Vec<Box<dyn EventListener>>,
 }
 
 impl PumpProcessor {
-    pub fn new(pump: EventPump, listeners: Vec<Box<dyn EventListener>>) -> Self {
-        PumpProcessor { pump, listeners }
+    pub fn new(pump: EventPump) -> Self {
+        PumpProcessor { pump }
     }
 
     pub fn process_batch(&mut self, state: &mut GameState) {
+        // let start_state = InputState::from(&self.pump);
+        // for listener in self.listeners.iter_mut() {
+        //     listener.batch_start(state, &start_state);
+        // }
+        //
+        // for event in self.pump.poll_iter() {
+        //     for listener in self.listeners.iter_mut() {
+        //         listener.process_event(state, &event);
+        //     }
+        // }
+        //
+        // let end_state = InputState::from(&self.pump);
+        // for listener in self.listeners.iter_mut() {
+        //     listener.batch_end(state, &end_state);
+        // }
+    }
+
+    pub fn process_events<'ttf, T: RenderTarget, L: EventListener<'ttf, T>>(&mut self, state: &mut GameState, listener: &mut L) {
         let start_state = InputState::from(&self.pump);
-        for listener in &self.listeners {
-            listener.batch_start(state, &start_state);
-        }
+        listener.batch_start(state, &start_state);
 
         for event in self.pump.poll_iter() {
-            for listener in &self.listeners {
-                listener.process_event(state, &event);
-            }
+            listener.process_event(state, &event);
         }
 
         let end_state = InputState::from(&self.pump);
-        for listener in &self.listeners {
-            listener.batch_end(state, &end_state);
-        }
+        listener.batch_end(state, &end_state);
     }
 }
 
-pub enum EventResult {}
+pub enum EventResult<'ttf, T: RenderTarget> {
+    PushScene(Box<dyn Scene<'ttf, T> + 'ttf>),
+    PopScene,
+}
 
 pub struct InputState<'r> {
     pub keyboard: KeyboardState<'r>,
@@ -63,20 +83,20 @@ impl GameState {
     }
 }
 
-pub trait EventListener {
-    fn batch_start(&self, _state: &mut GameState, _input: &InputState) -> Option<EventResult> { None }
-    fn process_event(&self, _state: &mut GameState, _event: &Event) -> Option<EventResult> { None }
-    fn batch_end(&self, _state: &mut GameState, _input: &InputState) -> Option<EventResult> { None }
+pub trait EventListener<'ttf, T: RenderTarget> {
+    fn batch_start(&mut self, _state: &mut GameState, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
+    fn process_event(&mut self, _state: &mut GameState, _event: &Event) -> Option<EventResult<'ttf, T>> { None }
+    fn batch_end(&mut self, _state: &mut GameState, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
 }
 
 pub struct QuitListener {}
 
-impl EventListener for QuitListener {
-    fn process_event(&self, state: &mut GameState, event: &Event) -> Option<EventResult> {
+impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for QuitListener {
+    fn process_event(&mut self, state: &mut GameState, event: &Event) -> Option<EventResult<'ttf, T>> {
         match event {
             Event::Quit { .. }
             | Event::KeyDown {
-                keycode: Some(Keycode::Escape | Keycode::Q),
+                keycode: Some(Keycode::Q),
                 ..
             } => {
                 state.running = false;
@@ -89,8 +109,8 @@ impl EventListener for QuitListener {
 
 pub struct MoveListener {}
 
-impl EventListener for MoveListener {
-    fn batch_end(&self, state: &mut GameState, input: &InputState) -> Option<EventResult> {
+impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MoveListener {
+    fn batch_end(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'ttf, T>> {
         let distance: f32 = state.ticks_to_process as f32 * 0.3;
         if input.keyboard.is_scancode_pressed(Scancode::Up) {
             state.y -= distance;

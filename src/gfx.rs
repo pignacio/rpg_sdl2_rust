@@ -1,8 +1,7 @@
 use std::path::Path;
 
-use sdl2::{render::TextureCreator, surface::Surface, image::LoadSurface};
-
-
+use sdl2::{image::LoadSurface, render::TextureCreator, surface::Surface};
+use crate::Error;
 
 pub struct Texture<'r> {
     texture: sdl2::render::Texture<'r>,
@@ -25,22 +24,24 @@ impl<'r> Texture<'r> {
 }
 
 pub struct TextureLoader<T> {
-    texture_creator: TextureCreator<T>
+    texture_creator: TextureCreator<T>,
 }
 
 impl<T> TextureLoader<T> {
-    pub fn new(texture_creator: TextureCreator<T>) -> TextureLoader<T>{
-        TextureLoader{ texture_creator }
+    pub fn new(texture_creator: TextureCreator<T>) -> TextureLoader<T> {
+        TextureLoader { texture_creator }
     }
 
-    pub fn load< P: AsRef<Path>>(&self, path: P) -> Result<Texture, String> {
+    pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<Texture, Error> {
+        self.texture_from_surface(Surface::from_file(path)?)
+    }
 
-        let surface = Surface::from_file(path)?;
+    pub fn texture_from_surface(&self, surface: Surface) -> Result<Texture, Error> {
         let height = surface.height();
         let width = surface.width();
-        let texture = self.texture_creator.create_texture_from_surface(surface).map_err(|e| e.to_string())?;
+        let texture = self.texture_creator.create_texture_from_surface(surface)?;
 
-        Ok(Texture{
+        Ok(Texture {
             texture,
             height,
             width,

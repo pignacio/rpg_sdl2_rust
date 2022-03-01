@@ -10,6 +10,7 @@ use crate::error::Error;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameConfig {
     pub character: String,
+    pub font: String,
 }
 
 pub enum Format {
@@ -41,27 +42,29 @@ pub fn serialize<W: Write, S: Serialize>(value: S, writer: W, format: Format) ->
     Ok(())
 }
 
-pub fn load_file<P: AsRef<Path>, D: DeserializeOwned>(path: &P) -> Result<D, Error> {
-    do_load_file(path).map_err(|e| e.with_path(path))
+pub fn load_file<P: AsRef<Path>, D: DeserializeOwned>(path: P) -> Result<D, Error> {
+    let path_ref = path.as_ref();
+    do_load_file(path_ref).map_err(|e| e.with_path(path_ref))
 }
 
-fn do_load_file<P: AsRef<Path>, D: DeserializeOwned>(path: &P) -> Result<D, Error> {
-    deserialize(File::open(path.as_ref())?, format_for_path(path)?)
+fn do_load_file<D: DeserializeOwned>(path: &Path) -> Result<D, Error> {
+    deserialize(File::open(path)?, format_for_path(path)?)
 }
 
-pub fn write_file<P: AsRef<Path>, S: Serialize>(path: &P, value: &S) -> Result<(), Error> {
-    do_write_file(path, value).map_err(|e| e.with_path(path))
+pub fn write_file<P: AsRef<Path>, S: Serialize>(path: P, value: &S) -> Result<(), Error> {
+    let path_ref = path.as_ref();
+    do_write_file(path_ref, value).map_err(|e| e.with_path(path_ref))
 }
 
-fn do_write_file<P: AsRef<Path>, S: Serialize>(path: &P, value: &S) -> Result<(), Error> {
+fn do_write_file<S: Serialize>(path: &Path, value: &S) -> Result<(), Error> {
     let format = format_for_path(path)?;
-    serialize(value, File::create(path.as_ref())?, format)
+    serialize(value, File::create(path)?, format)
 }
 
-fn format_for_path<P: AsRef<Path>>(path: P) -> Result<Format, Error> {
-    let extension = path.as_ref().extension()
+fn format_for_path(path: &Path) -> Result<Format, Error> {
+    let extension = path.extension()
         .and_then(|e| e.to_str())
-        .ok_or(Error::Simple { message: format!("Could not find extension for {:?}", path.as_ref().to_str()) })?;
+        .ok_or(Error::Simple { message: format!("Could not find extension for {:?}", path.to_str()) })?;
     println!("Extension is {}", extension);
     match extension.as_ref() {
         "json" => Ok(Format::JSON),

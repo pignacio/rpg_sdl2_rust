@@ -3,6 +3,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub enum Error {
     Simple { message: String },
+    Standard { err: Box<dyn std::error::Error> },
     Pathed { path: String, err: Box<Error> },
     SerdeJson { err: serde_json::Error },
     Bincode { err: bincode::Error },
@@ -10,7 +11,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn with_path<P: AsRef<Path>>(self, path: &P) -> Error {
+    pub fn with_path<P: AsRef<Path>>(self, path: P) -> Error {
         match path.as_ref().to_str() {
             Some(p) => Error::Pathed { path: p.to_owned(), err: Box::new(self) },
             None => self,
@@ -24,21 +25,18 @@ impl From<String> for Error {
     }
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
-        Error::SerdeJson { err }
+macro_rules! from_impl {
+    ($t:ty) => {
+        impl From<$t> for Error {
+            fn from(err: $t) -> Self {
+                Error::Standard { err: Box::new(err) }
+            }
+        }
     }
 }
 
-impl From<bincode::Error> for Error {
-    fn from(err: bincode::Error) -> Self {
-        Error::Bincode { err }
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::Io { err }
-    }
-}
-
+from_impl![serde_json::Error];
+from_impl![bincode::Error];
+from_impl![std::io::Error];
+from_impl![sdl2::render::TextureValueError];
+from_impl![sdl2::ttf::FontError];
