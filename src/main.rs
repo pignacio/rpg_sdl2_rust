@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::rc::Rc;
 
 use sdl2::event::Event;
 use sdl2::pixels::Color;
@@ -54,10 +53,9 @@ fn run() -> Result<(), Error> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let font = Rc::new(ttf.load_font(data_path.join(config.font), 36)?);
     let creator = canvas.texture_creator();
     let loader = TextureLoader::new(&creator);
-    let resources = CachedResources::new(loader);
+    let resources = CachedResources::new(loader, &ttf);
 
     let mut state = GameState::new(resources);
 
@@ -68,7 +66,7 @@ fn run() -> Result<(), Error> {
         global_listeners: listeners,
         stack: Vec::new(),
     };
-    let thebox = Box::new(MainMenu::new(font.clone(), config.map));
+    let thebox = Box::new(MainMenu::new(config.font.load(&mut state.resources)?, config.map));
     scene_stack.stack.push(thebox);
     let mut frame_count = 0;
     let mut last_frames = [0u32; 500];

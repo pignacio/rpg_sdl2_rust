@@ -34,6 +34,7 @@ impl<'tx, T> TextureLoader<'tx, T> {
     }
 
     pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<Texture<'tx>, Error> {
+        println!("Loading Texture @{} ", path.as_ref().to_str().unwrap_or("<<invalid file>>"));
         self.texture_from_surface(Surface::from_file(path)?)
     }
 

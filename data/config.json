@@ -1,6 +1,11 @@
 {
   "character": "character.png",
-  "font": "CollegiateFLF.ttf",
+  "font": {
+    "Inline": {
+      "path": "CollegiateFLF.ttf",
+      "size": 40
+    }
+  },
   "map": {
     "tileset": {
       "Inline": {

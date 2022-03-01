@@ -4,20 +4,24 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use crate::data::font::FontData;
 use crate::data::map::MapData;
 
 use crate::error::Error;
 
+pub mod font;
+pub mod gfx;
 pub mod map;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameConfig {
-    pub font: String,
+    pub font: FontData,
     pub map: MapData,
 }
 
 impl Data for GameConfig {
     fn reroot(&mut self, base_path: &Path) {
+        self.font.reroot(base_path);
         self.map.reroot(base_path);
     }
 }
