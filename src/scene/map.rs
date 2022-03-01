@@ -146,7 +146,7 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 }
 
 impl<'tx, T: RenderTarget> Scene<'tx, T> for MapScene<'tx> {
-    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'tx>) -> Result<(), Error> {
+    fn draw(&mut self, canvas: &mut Canvas<T>, _resources: &mut dyn Resources<'tx>) -> Result<(), Error> {
         for layer in &self.tiles {
             self.print(layer, canvas)?;
         }

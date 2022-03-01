@@ -21,7 +21,7 @@ impl Data for GameConfig {
         self.map.reroot(base_path);
     }
 }
-s
+
 pub enum Format {
     JSON,
     BINCODE,

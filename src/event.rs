@@ -1,12 +1,8 @@
-use std::rc::Rc;
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::{KeyboardState, Keycode};
 use sdl2::render::{RenderTarget};
 use sdl2::video::WindowContext;
-use crate::gfx::spritesheet::SpriteSheet;
-use crate::gfx::texture::Texture;
-use crate::gfx::tileset::Tileset;
 
 use crate::{CachedResources, Scene};
 

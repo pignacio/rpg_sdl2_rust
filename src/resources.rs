@@ -38,11 +38,11 @@ impl<'ttf, T> Resources<'ttf> for CachedResources<'ttf, T> {
         self.textures.get(&key).map(|rc| rc.clone()).ok_or_else(|| Error::simple("Could not insert texture into cache"))
     }
 
-    fn get_texture(&mut self, id: &str) -> Result<Rc<Texture<'ttf>>, Error> {
+    fn get_texture(&mut self, _id: &str) -> Result<Rc<Texture<'ttf>>, Error> {
         Err(Error::simple("Resource ds are not supported"))
     }
 
-    fn get_tileset(&mut self, id: &str) -> Result<Rc<Tileset<'ttf>>, Error> {
+    fn get_tileset(&mut self, _id: &str) -> Result<Rc<Tileset<'ttf>>, Error> {
         Err(Error::simple("Resource ds are not supported"))
     }
 
