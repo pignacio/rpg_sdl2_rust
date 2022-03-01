@@ -6,9 +6,8 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::ttf::Font;
-use sdl2::video::WindowContext;
 
-use crate::{Error, EventListener, EventResult, GameState, Scene, TextureLoader};
+use crate::{Error, EventListener, EventResult, GameState, MapData, Resources, Scene};
 use crate::scene::map::MapScene;
 
 #[derive(PartialEq)]
@@ -32,13 +31,13 @@ const MENU_OPTIONS: [MenuOption; 3] = [MenuOption::START, MenuOption::SETTINGS, 
 
 pub struct MainMenu<'ttf> {
     font: Rc<Font<'ttf, 'static>>,
-    texture_loader: TextureLoader<WindowContext>,
+    map_data: MapData,
     selected_option: i32,
 }
 
 impl<'ttf> MainMenu<'ttf> {
-    pub fn new(font: Rc<Font<'ttf, 'static>>, texture_loader: TextureLoader<WindowContext>) -> Self {
-        MainMenu { font, texture_loader, selected_option: 0 }
+    pub fn new(font: Rc<Font<'ttf, 'static>>, map_data: MapData) -> Self {
+        MainMenu { font, map_data, selected_option: 0 }
     }
 
     fn selected_option(&self) -> &MenuOption {
@@ -57,7 +56,11 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
             }
             Event::KeyDown { keycode: Some(Keycode::Return | Keycode::KpEnter), .. } => {
                 match *self.selected_option() {
-                    MenuOption::START => { return Some(EventResult::PushScene(Box::new(MapScene::new(Rc::clone(&state.character), Rc::clone(&state.sprites))))); }
+                    MenuOption::START => {
+                        let character = self.map_data.character.load(&mut state.resources).unwrap();
+                        let tiles = self.map_data.tileset.load(&mut state.resources).unwrap();
+                        return Some(EventResult::PushScene(Box::new(MapScene::new(character, tiles, self.map_data.tiles.clone()))));
+                    }
                     MenuOption::QUIT => state.running = false,
                     MenuOption::SETTINGS => println!("No settings for you!"),
                 }
@@ -69,10 +72,10 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
 }
 
 impl<'ttf, T: RenderTarget> Scene<'ttf, T> for MainMenu<'ttf> {
-    fn draw(&mut self, canvas: &mut Canvas<T>) -> Result<(), Error> {
+    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
         for (index, option) in MENU_OPTIONS.iter().enumerate() {
             let surface = self.font.render(option.text()).blended(if option == self.selected_option() { Color::RED } else { Color::WHITE })?;
-            let texture = self.texture_loader.texture_from_surface(surface)?;
+            let texture = resources.texture_from_surface(surface)?;
             canvas.copy(texture.texture(), None, Rect::new(300, 300 + 50 * (index as i32), texture.width(), texture.height()))?;
         }
         Ok(())

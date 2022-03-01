@@ -5,22 +5,21 @@ use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 
-use crate::{Error, EventListener, EventResult, GameState, InputState, Scene};
-use crate::gfx::spritesheet::SpriteSheet;
+use crate::{Error, EventListener, EventResult, GameState, InputState, Resources, Scene};
 use crate::gfx::texture::Texture;
 use crate::gfx::tileset::Tileset;
 
 pub struct MapScene<'tx> {
     character: Rc<Texture<'tx>>,
-    sprites: Rc<SpriteSheet<'tx>>,
-    tiles: Tileset<'tx>,
+    tileset: Rc<Tileset<'tx>>,
+    tiles: Vec<Vec<Vec<u32>>>,
     x: f32,
     y: f32,
     sprite_x: u32,
     sprite_y: u32,
 }
 
-const LAYER_1: [[u32; 20]; 20] = [
+pub const LAYER_1: [[u32; 20]; 20] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -43,7 +42,7 @@ const LAYER_1: [[u32; 20]; 20] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
-const LAYER_2: [[u32; 20]; 20] = [
+pub const LAYER_2: [[u32; 20]; 20] = [
     [143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143],
     [143, 143, 2, 3, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143],
     [143, 143, 143, 143, 143, 3, 4, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143],
@@ -66,22 +65,33 @@ const LAYER_2: [[u32; 20]; 20] = [
     [143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143, 143]
 ];
 
+pub fn to_vec(layer: &[[u32; 20]; 20]) -> Vec<Vec<u32>> {
+   layer.iter().map(|row| row.to_vec()).collect()
+}
+
 impl<'tx> MapScene<'tx> {
-    pub fn new(character: Rc<Texture<'tx>>, sprites: Rc<SpriteSheet<'tx>>) -> Self {
-        MapScene { character, sprites: sprites.clone(), tiles: Tileset::new(sprites), x: 0., y: 0., sprite_x: 0, sprite_y: 0 }
+    pub fn new(character: Rc<Texture<'tx>>, tileset: Rc<Tileset<'tx>>, tiles: Vec<Vec<Vec<u32>>>) -> Self {
+        MapScene { character, tileset, tiles, x: 0., y: 0., sprite_x: 0, sprite_y: 0 }
     }
 
-    fn print<T: RenderTarget>(&self, layer: [[u32; 20]; 20], canvas: &mut Canvas<T>) -> Result<(), Error> {
+    pub fn old_new(character: Rc<Texture<'tx>>, tileset: Rc<Tileset<'tx>>) -> Self {
+        let mut tiles = Vec::new();
+        tiles.push(to_vec(&LAYER_1));
+        tiles.push(to_vec(&LAYER_2));
+        MapScene { character, tileset, tiles: tiles, x: 0., y: 0., sprite_x: 0, sprite_y: 0 }
+    }
+
+    fn print<T: RenderTarget>(&self, layer: &Vec<Vec<u32>>, canvas: &mut Canvas<T>) -> Result<(), Error> {
         for (y, row) in layer.iter().enumerate() {
             for (x, value) in row.iter().enumerate() {
                 let dst = Rect::new(
-                    (x as u32 * self.tiles.tile_width()) as i32,
-                    (y as u32 * self.tiles.tile_height()) as i32,
-                    self.tiles.tile_width(),
-                    self.tiles.tile_height(),
+                    (x as u32 * self.tileset.tile_width()) as i32,
+                    (y as u32 * self.tileset.tile_height()) as i32,
+                    self.tileset.tile_width(),
+                    self.tileset.tile_height(),
                 );
 
-                self.tiles.get_tile(*value)
+                self.tileset.get_tile(*value)
                     .and_then(|tile_rect| {
                         canvas.copy(tile_rect.texture().texture(), tile_rect.rect(), dst)?;
                         Ok(())
@@ -136,9 +146,10 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 }
 
 impl<'tx, T: RenderTarget> Scene<'tx, T> for MapScene<'tx> {
-    fn draw(&mut self, canvas: &mut Canvas<T>) -> Result<(), Error> {
-        self.print(LAYER_1, canvas)?;
-        self.print(LAYER_2, canvas)?;
+    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'tx>) -> Result<(), Error> {
+        for layer in &self.tiles {
+            self.print(layer, canvas)?;
+        }
 
         let src = Rect::new(0, 0, 16, 32);
         let dst = Rect::new(self.x as i32, self.y as i32, 32, 64);

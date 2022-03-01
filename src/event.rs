@@ -2,11 +2,13 @@ use std::rc::Rc;
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::{KeyboardState, Keycode};
-use sdl2::render::RenderTarget;
+use sdl2::render::{RenderTarget};
+use sdl2::video::WindowContext;
 use crate::gfx::spritesheet::SpriteSheet;
 use crate::gfx::texture::Texture;
+use crate::gfx::tileset::Tileset;
 
-use crate::Scene;
+use crate::{CachedResources, Scene};
 
 pub struct PumpProcessor {
     pump: EventPump,
@@ -50,17 +52,15 @@ impl<'r> InputState<'r> {
 pub struct GameState<'tx> {
     pub running: bool,
     pub ticks_to_process: u32,
-    pub character: Rc<Texture<'tx>>,
-    pub sprites: Rc<SpriteSheet<'tx>>,
+    pub resources: CachedResources<'tx, WindowContext>,
 }
 
 impl<'tx> GameState<'tx> {
-    pub fn new(character: Rc<Texture<'tx>>, sprites: Rc<SpriteSheet<'tx>>) -> Self {
+    pub fn new(resources: CachedResources<'tx, WindowContext>) -> Self {
         GameState {
             running: true,
             ticks_to_process: 0,
-            character,
-            sprites,
+            resources,
         }
     }
 }

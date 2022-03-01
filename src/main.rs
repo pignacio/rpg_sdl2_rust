@@ -8,16 +8,19 @@ use sdl2::video::Window;
 
 use gfx::texture::TextureLoader;
 
-use crate::data::GameConfig;
+use crate::data::{Data, GameConfig};
+use crate::data::map::{MapData};
 use crate::error::Error;
 use crate::event::{EventListener, EventResult, GameState, InputState, PumpProcessor, QuitListener};
 use crate::gfx::spritesheet::SpriteSheet;
+use crate::resources::{CachedResources, Resources};
 use crate::scene::{main_menu::MainMenu, Scene};
 
 pub mod data;
 pub mod error;
 pub mod event;
 pub mod gfx;
+pub mod resources;
 pub mod scene;
 pub mod utils;
 
@@ -37,9 +40,12 @@ fn run() -> Result<(), Error> {
     let ttf = sdl2::ttf::init().map_err(|e| e.to_string())?;
 
     let data_path = Path::new("data");
-    let config: GameConfig = data::load_file(data_path.join("config.json"))?;
+    let mut config: GameConfig = data::load_file(data_path.join("config.json"))?;
     println!("{:?}", config);
     data::write_file(data_path.join("config.bin"), &config)?;
+    // data::write_file(data_path.join("config.json"), &config)?;
+
+    config.reroot(data_path);
 
     let pump = sdl2.event_pump()?;
     let mut canvas = window.into_canvas()
@@ -48,11 +54,12 @@ fn run() -> Result<(), Error> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let texture_loader = TextureLoader::new(canvas.texture_creator());
+    let font = Rc::new(ttf.load_font(data_path.join(config.font), 36)?);
+    let creator = canvas.texture_creator();
+    let loader = TextureLoader::new(&creator);
+    let resources = CachedResources::new(loader);
 
-    let character = Rc::new(texture_loader.load(data_path.join(config.character))?);
-    let sprites = Rc::new(SpriteSheet::new(Rc::new(texture_loader.load(data_path.join("001-Grassland01.png"))?), 32, 32));
-    let mut state = GameState::new(character, sprites);
+    let mut state = GameState::new(resources);
 
     let mut listeners: Vec<Box<dyn EventListener<Window>>> = Vec::new();
     listeners.push(Box::new(QuitListener {}));
@@ -61,8 +68,7 @@ fn run() -> Result<(), Error> {
         global_listeners: listeners,
         stack: Vec::new(),
     };
-    let font = Rc::new(ttf.load_font(data_path.join(config.font), 36)?);
-    let thebox = Box::new(MainMenu::new(font.clone(), TextureLoader::new(canvas.texture_creator())));
+    let thebox = Box::new(MainMenu::new(font.clone(), config.map));
     scene_stack.stack.push(thebox);
     let mut frame_count = 0;
     let mut last_frames = [0u32; 500];
@@ -81,7 +87,7 @@ fn run() -> Result<(), Error> {
 
         pump_processor.process_events(&mut state, &mut scene_stack);
 
-        scene_stack.draw(&mut canvas)?;
+        scene_stack.draw(&mut canvas, &mut state.resources)?;
 
         canvas.present();
         frame_count += 1;
@@ -152,7 +158,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for SceneStack<'ttf, T> {
 }
 
 impl<'ttf, T: RenderTarget> Scene<'ttf, T> for SceneStack<'ttf, T> {
-    fn draw(&mut self, canvas: &mut Canvas<T>) -> Result<(), Error> {
-        self.active_scene_mut().draw(canvas)
+    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
+        self.active_scene_mut().draw(canvas, resources)
     }
 }

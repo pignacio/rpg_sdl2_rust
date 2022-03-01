@@ -24,20 +24,20 @@ impl<'r> Texture<'r> {
     }
 }
 
-pub struct TextureLoader<T> {
-    texture_creator: TextureCreator<T>,
+pub struct TextureLoader<'ttf, T> {
+    texture_creator: &'ttf TextureCreator<T>,
 }
 
-impl<T> TextureLoader<T> {
-    pub fn new(texture_creator: TextureCreator<T>) -> TextureLoader<T> {
+impl<'tx, T> TextureLoader<'tx, T> {
+    pub fn new(texture_creator: &'tx TextureCreator<T>) -> TextureLoader<'tx, T> {
         TextureLoader { texture_creator }
     }
 
-    pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<Texture, Error> {
+    pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<Texture<'tx>, Error> {
         self.texture_from_surface(Surface::from_file(path)?)
     }
 
-    pub fn texture_from_surface(&self, surface: Surface) -> Result<Texture, Error> {
+    pub fn texture_from_surface(&self, surface: Surface) -> Result<Texture<'tx>, Error> {
         let height = surface.height();
         let width = surface.width();
         let texture = self.texture_creator.create_texture_from_surface(surface)?;

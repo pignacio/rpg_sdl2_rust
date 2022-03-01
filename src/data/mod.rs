@@ -4,20 +4,36 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use crate::data::map::MapData;
 
 use crate::error::Error;
 
+pub mod map;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameConfig {
-    pub character: String,
     pub font: String,
+    pub map: MapData,
 }
 
+impl Data for GameConfig {
+    fn reroot(&mut self, base_path: &Path) {
+        self.map.reroot(base_path);
+    }
+}
+s
 pub enum Format {
     JSON,
     BINCODE,
 }
 
+pub trait Data {
+    fn reroot(&mut self, base_path: &Path);
+}
+
+fn join_as_string<P1: AsRef<Path>, P2: AsRef<Path>>(base_path: P1, rel_path: P2) -> String {
+    base_path.as_ref().join(rel_path).to_str().unwrap().to_owned()
+}
 
 pub fn deserialize<R: Read, D: DeserializeOwned>(data: R, format: Format) -> Result<D, Error> {
     Ok(match format {
