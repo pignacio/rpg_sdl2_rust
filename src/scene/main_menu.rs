@@ -59,7 +59,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
                     MenuOption::START => {
                         let character = self.map_data.character.load(&mut state.resources).unwrap();
                         let tiles = self.map_data.tileset.load(&mut state.resources).unwrap();
-                        return Some(EventResult::PushScene(Box::new(MapScene::new(character, tiles, self.map_data.tiles.clone()))));
+                        return Some(EventResult::PushScene(Box::new(MapScene::new(character, tiles, self.map_data.tiles.to_tiles()))));
                     }
                     MenuOption::QUIT => state.running = false,
                     MenuOption::SETTINGS => println!("No settings for you!"),

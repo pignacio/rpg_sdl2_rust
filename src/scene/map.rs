@@ -9,10 +9,13 @@ use crate::{Error, EventListener, EventResult, GameState, InputState, Resources,
 use crate::gfx::texture::Texture;
 use crate::gfx::tileset::Tileset;
 
+pub type Layer<T> = Vec<Vec<T>>;
+pub type Tiles<T> = Vec<Layer<T>>;
+
 pub struct MapScene<'tx> {
     character: Rc<Texture<'tx>>,
     tileset: Rc<Tileset<'tx>>,
-    tiles: Vec<Vec<Vec<u32>>>,
+    tiles: Tiles<u32>,
     x: f32,
     y: f32,
     sprite_x: u32,
