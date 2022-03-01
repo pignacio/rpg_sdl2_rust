@@ -11,6 +11,10 @@ pub enum Error {
 }
 
 impl Error {
+    pub fn simple<T: AsRef<str>>(message: T) -> Self {
+        Error::Simple {message: message.as_ref().to_owned()}
+    }
+
     pub fn with_path<P: AsRef<Path>>(self, path: P) -> Error {
         match path.as_ref().to_str() {
             Some(p) => Error::Pathed { path: p.to_owned(), err: Box::new(self) },

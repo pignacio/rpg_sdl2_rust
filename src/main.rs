@@ -6,11 +6,12 @@ use sdl2::pixels::Color;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::video::Window;
 
-use gfx::TextureLoader;
+use gfx::texture::TextureLoader;
 
 use crate::data::GameConfig;
 use crate::error::Error;
 use crate::event::{EventListener, EventResult, GameState, InputState, PumpProcessor, QuitListener};
+use crate::gfx::spritesheet::SpriteSheet;
 use crate::scene::{main_menu::MainMenu, Scene};
 
 pub mod data;
@@ -41,12 +42,17 @@ fn run() -> Result<(), Error> {
     data::write_file(data_path.join("config.bin"), &config)?;
 
     let pump = sdl2.event_pump()?;
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas()
+        .accelerated()
+        .present_vsync()
+        .build()
+        .map_err(|e| e.to_string())?;
 
     let texture_loader = TextureLoader::new(canvas.texture_creator());
 
     let character = Rc::new(texture_loader.load(data_path.join(config.character))?);
-    let mut state = GameState::new();
+    let sprites = Rc::new(SpriteSheet::new(Rc::new(texture_loader.load(data_path.join("001-Grassland01.png"))?), 32, 32));
+    let mut state = GameState::new(character, sprites);
 
     let mut listeners: Vec<Box<dyn EventListener<Window>>> = Vec::new();
     listeners.push(Box::new(QuitListener {}));
@@ -56,14 +62,18 @@ fn run() -> Result<(), Error> {
         stack: Vec::new(),
     };
     let font = Rc::new(ttf.load_font(data_path.join(config.font), 36)?);
-    let thebox = Box::new(MainMenu::new(font.clone(), TextureLoader::new(canvas.texture_creator()), Rc::clone(&character)));
+    let thebox = Box::new(MainMenu::new(font.clone(), TextureLoader::new(canvas.texture_creator())));
     scene_stack.stack.push(thebox);
-
+    let mut frame_count = 0;
+    let mut last_frames = [0u32; 500];
     let mut last_ticks = timer.ticks();
     let mut pump_processor = PumpProcessor::new(pump);
     while state.running {
         let current_ticks = timer.ticks();
         state.ticks_to_process = current_ticks - last_ticks;
+        if frame_count > 0 {
+            last_frames[frame_count % last_frames.len()] = state.ticks_to_process;
+        }
         last_ticks = current_ticks;
 
         canvas.set_draw_color(Color::BLACK);
@@ -74,6 +84,13 @@ fn run() -> Result<(), Error> {
         scene_stack.draw(&mut canvas)?;
 
         canvas.present();
+        frame_count += 1;
+        if frame_count % last_frames.len() == 0 {
+            let sum: u32 = last_frames.iter().sum();
+            let max = last_frames.iter().max();
+            let fps = last_frames.len() as u32 * 1000 / sum;
+            println!("Last {} frames took {} ms. Biggest frame: {} ms. Avg FPS: {}", last_frames.len(), sum, max.unwrap_or(&0), fps);
+        }
     }
 
     Ok(())
@@ -106,7 +123,7 @@ impl<'ttf, T: RenderTarget> SceneStack<'ttf, T> {
 
 
 impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for SceneStack<'ttf, T> {
-    fn batch_start(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'ttf, T>> {
+    fn batch_start(&mut self, state: &mut GameState<'ttf>, input: &InputState) -> Option<EventResult<'ttf, T>> {
         for listener in self.global_listeners.iter_mut() {
             listener.batch_start(state, input);
         }
@@ -115,7 +132,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for SceneStack<'ttf, T> {
         None
     }
 
-    fn process_event(&mut self, state: &mut GameState, event: &Event) -> Option<EventResult<'ttf, T>> {
+    fn process_event(&mut self, state: &mut GameState<'ttf>, event: &Event) -> Option<EventResult<'ttf, T>> {
         for listener in self.global_listeners.iter_mut() {
             listener.process_event(state, event);
         }
@@ -124,7 +141,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for SceneStack<'ttf, T> {
         None
     }
 
-    fn batch_end(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'ttf, T>> {
+    fn batch_end(&mut self, state: &mut GameState<'ttf>, input: &InputState) -> Option<EventResult<'ttf, T>> {
         for listener in self.global_listeners.iter_mut() {
             listener.batch_end(state, input);
         }

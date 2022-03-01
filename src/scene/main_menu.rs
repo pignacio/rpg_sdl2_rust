@@ -9,7 +9,7 @@ use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
 use crate::{Error, EventListener, EventResult, GameState, Scene, TextureLoader};
-use crate::gfx::Texture;
+use crate::gfx::texture::Texture;
 use crate::scene::map::MapScene;
 
 #[derive(PartialEq)]
@@ -35,12 +35,11 @@ pub struct MainMenu<'ttf> {
     font: Rc<Font<'ttf, 'static>>,
     texture_loader: TextureLoader<WindowContext>,
     selected_option: i32,
-    character: Rc<Texture<'ttf>>,
 }
 
 impl<'ttf> MainMenu<'ttf> {
-    pub fn new(font: Rc<Font<'ttf, 'static>>, texture_loader: TextureLoader<WindowContext>, character: Rc<Texture<'ttf>>) -> Self {
-        MainMenu { font, texture_loader, selected_option: 0, character }
+    pub fn new(font: Rc<Font<'ttf, 'static>>, texture_loader: TextureLoader<WindowContext>) -> Self {
+        MainMenu { font, texture_loader, selected_option: 0}
     }
 
     fn selected_option(&self) -> &MenuOption {
@@ -49,7 +48,7 @@ impl<'ttf> MainMenu<'ttf> {
 }
 
 impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
-    fn process_event(&mut self, state: &mut GameState, event: &Event) -> Option<EventResult<'ttf, T>> {
+    fn process_event(&mut self, state: &mut GameState<'ttf>, event: &Event) -> Option<EventResult<'ttf, T>> {
         match event {
             Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
                 self.selected_option -= 1;
@@ -59,7 +58,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
             }
             Event::KeyDown { keycode: Some(Keycode::Return | Keycode::KpEnter), .. } => {
                 match *self.selected_option() {
-                    MenuOption::START => { return Some(EventResult::PushScene(Box::new(MapScene::new(Rc::clone(&self.character))))); }
+                    MenuOption::START => { return Some(EventResult::PushScene(Box::new(MapScene::new(Rc::clone(&state.character), Rc::clone(&state.sprites))))); }
                     MenuOption::QUIT => state.running = false,
                     MenuOption::SETTINGS => println!("No settings for you!"),
                 }

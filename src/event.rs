@@ -1,7 +1,10 @@
+use std::rc::Rc;
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::keyboard::{KeyboardState, Keycode};
 use sdl2::render::RenderTarget;
+use crate::gfx::spritesheet::SpriteSheet;
+use crate::gfx::texture::Texture;
 
 use crate::Scene;
 
@@ -14,7 +17,7 @@ impl PumpProcessor {
         PumpProcessor { pump }
     }
 
-    pub fn process_events<'ttf, T: RenderTarget, L: EventListener<'ttf, T>>(&mut self, state: &mut GameState, listener: &mut L) {
+    pub fn process_events<'ttf, T: RenderTarget, L: EventListener<'ttf, T>>(&mut self, state: &mut GameState<'ttf>, listener: &mut L) {
         let start_state = InputState::from(&self.pump);
         listener.batch_start(state, &start_state);
 
@@ -44,30 +47,34 @@ impl<'r> InputState<'r> {
     }
 }
 
-pub struct GameState {
+pub struct GameState<'tx> {
     pub running: bool,
     pub ticks_to_process: u32,
+    pub character: Rc<Texture<'tx>>,
+    pub sprites: Rc<SpriteSheet<'tx>>,
 }
 
-impl GameState {
-    pub fn new() -> Self {
+impl<'tx> GameState<'tx> {
+    pub fn new(character: Rc<Texture<'tx>>, sprites: Rc<SpriteSheet<'tx>>) -> Self {
         GameState {
             running: true,
             ticks_to_process: 0,
+            character,
+            sprites,
         }
     }
 }
 
 pub trait EventListener<'ttf, T: RenderTarget> {
-    fn batch_start(&mut self, _state: &mut GameState, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
-    fn process_event(&mut self, _state: &mut GameState, _event: &Event) -> Option<EventResult<'ttf, T>> { None }
-    fn batch_end(&mut self, _state: &mut GameState, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
+    fn batch_start(&mut self, _state: &mut GameState<'ttf>, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
+    fn process_event(&mut self, _state: &mut GameState<'ttf>, _event: &Event) -> Option<EventResult<'ttf, T>> { None }
+    fn batch_end(&mut self, _state: &mut GameState<'ttf>, _input: &InputState) -> Option<EventResult<'ttf, T>> { None }
 }
 
 pub struct QuitListener {}
 
 impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for QuitListener {
-    fn process_event(&mut self, state: &mut GameState, event: &Event) -> Option<EventResult<'ttf, T>> {
+    fn process_event(&mut self, state: &mut GameState<'ttf>, event: &Event) -> Option<EventResult<'ttf, T>> {
         match event {
             Event::Quit { .. }
             | Event::KeyDown {
