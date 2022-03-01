@@ -1,4 +1,5 @@
 use std::rc::Rc;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -6,6 +7,7 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
+
 use crate::{Error, EventListener, EventResult, GameState, Scene, TextureLoader};
 use crate::gfx::Texture;
 use crate::scene::map::MapScene;
@@ -38,7 +40,7 @@ pub struct MainMenu<'ttf> {
 
 impl<'ttf> MainMenu<'ttf> {
     pub fn new(font: Rc<Font<'ttf, 'static>>, texture_loader: TextureLoader<WindowContext>, character: Rc<Texture<'ttf>>) -> Self {
-        MainMenu { font, texture_loader, selected_option: 0, character}
+        MainMenu { font, texture_loader, selected_option: 0, character }
     }
 
     fn selected_option(&self) -> &MenuOption {
@@ -57,7 +59,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
             }
             Event::KeyDown { keycode: Some(Keycode::Return | Keycode::KpEnter), .. } => {
                 match *self.selected_option() {
-                    MenuOption::START => { return Some(EventResult::PushScene(Box::new(MapScene::new(Rc::clone(&self.character)))));}
+                    MenuOption::START => { return Some(EventResult::PushScene(Box::new(MapScene::new(Rc::clone(&self.character))))); }
                     MenuOption::QUIT => state.running = false,
                     MenuOption::SETTINGS => println!("No settings for you!"),
                 }

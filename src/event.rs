@@ -1,11 +1,8 @@
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
-
 use sdl2::event::Event;
 use sdl2::EventPump;
-use sdl2::keyboard::{KeyboardState, Keycode, Scancode};
+use sdl2::keyboard::{KeyboardState, Keycode};
 use sdl2::render::RenderTarget;
-use sdl2::video::Window;
+
 use crate::Scene;
 
 pub struct PumpProcessor {
@@ -15,24 +12,6 @@ pub struct PumpProcessor {
 impl PumpProcessor {
     pub fn new(pump: EventPump) -> Self {
         PumpProcessor { pump }
-    }
-
-    pub fn process_batch(&mut self, state: &mut GameState) {
-        // let start_state = InputState::from(&self.pump);
-        // for listener in self.listeners.iter_mut() {
-        //     listener.batch_start(state, &start_state);
-        // }
-        //
-        // for event in self.pump.poll_iter() {
-        //     for listener in self.listeners.iter_mut() {
-        //         listener.process_event(state, &event);
-        //     }
-        // }
-        //
-        // let end_state = InputState::from(&self.pump);
-        // for listener in self.listeners.iter_mut() {
-        //     listener.batch_end(state, &end_state);
-        // }
     }
 
     pub fn process_events<'ttf, T: RenderTarget, L: EventListener<'ttf, T>>(&mut self, state: &mut GameState, listener: &mut L) {
@@ -67,8 +46,6 @@ impl<'r> InputState<'r> {
 
 pub struct GameState {
     pub running: bool,
-    pub x: f32,
-    pub y: f32,
     pub ticks_to_process: u32,
 }
 
@@ -76,8 +53,6 @@ impl GameState {
     pub fn new() -> Self {
         GameState {
             running: true,
-            x: 0.,
-            y: 0.,
             ticks_to_process: 0,
         }
     }
@@ -104,26 +79,5 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for QuitListener {
             }
             _ => None
         }
-    }
-}
-
-pub struct MoveListener {}
-
-impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MoveListener {
-    fn batch_end(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'ttf, T>> {
-        let distance: f32 = state.ticks_to_process as f32 * 0.3;
-        if input.keyboard.is_scancode_pressed(Scancode::Up) {
-            state.y -= distance;
-        }
-        if input.keyboard.is_scancode_pressed(Scancode::Down) {
-            state.y += distance;
-        }
-        if input.keyboard.is_scancode_pressed(Scancode::Left) {
-            state.x -= distance;
-        }
-        if input.keyboard.is_scancode_pressed(Scancode::Right) {
-            state.x += distance;
-        }
-        None
     }
 }

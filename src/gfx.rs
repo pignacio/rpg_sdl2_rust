@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use sdl2::{image::LoadSurface, render::TextureCreator, surface::Surface};
+
 use crate::Error;
 
 pub struct Texture<'r> {

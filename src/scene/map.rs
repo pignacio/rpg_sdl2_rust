@@ -1,8 +1,10 @@
 use std::rc::Rc;
+
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
+
 use crate::{Error, EventListener, EventResult, GameState, InputState, Scene};
 use crate::gfx::Texture;
 

@@ -1,10 +1,8 @@
-use std::ops::DerefMut;
 use std::path::Path;
 use std::rc::Rc;
 
-use sdl2::{pixels::Color, rect::Rect};
 use sdl2::event::Event;
-use sdl2::libc::listen;
+use sdl2::pixels::Color;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::video::Window;
 
@@ -12,7 +10,7 @@ use gfx::TextureLoader;
 
 use crate::data::GameConfig;
 use crate::error::Error;
-use crate::event::{EventListener, EventResult, GameState, InputState, MoveListener, PumpProcessor, QuitListener};
+use crate::event::{EventListener, EventResult, GameState, InputState, PumpProcessor, QuitListener};
 use crate::scene::{main_menu::MainMenu, Scene};
 
 pub mod data;
@@ -52,7 +50,6 @@ fn run() -> Result<(), Error> {
 
     let mut listeners: Vec<Box<dyn EventListener<Window>>> = Vec::new();
     listeners.push(Box::new(QuitListener {}));
-    listeners.push(Box::new(MoveListener {}));
 
     let mut scene_stack: SceneStack<Window> = SceneStack {
         global_listeners: listeners,
@@ -74,7 +71,7 @@ fn run() -> Result<(), Error> {
 
         pump_processor.process_events(&mut state, &mut scene_stack);
 
-        scene_stack.draw(&mut canvas);
+        scene_stack.draw(&mut canvas)?;
 
         canvas.present();
     }
