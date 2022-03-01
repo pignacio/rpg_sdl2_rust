@@ -9,7 +9,6 @@ use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
 use crate::{Error, EventListener, EventResult, GameState, Scene, TextureLoader};
-use crate::gfx::texture::Texture;
 use crate::scene::map::MapScene;
 
 #[derive(PartialEq)]
@@ -39,7 +38,7 @@ pub struct MainMenu<'ttf> {
 
 impl<'ttf> MainMenu<'ttf> {
     pub fn new(font: Rc<Font<'ttf, 'static>>, texture_loader: TextureLoader<WindowContext>) -> Self {
-        MainMenu { font, texture_loader, selected_option: 0}
+        MainMenu { font, texture_loader, selected_option: 0 }
     }
 
     fn selected_option(&self) -> &MenuOption {

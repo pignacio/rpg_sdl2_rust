@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::rc::Rc;
 
 use sdl2::rect::Rect;
@@ -20,7 +19,7 @@ impl<'tx> SpriteSheet<'tx> {
         let sheet_width = sheet.width() / sprite_width;
         let sheet_height = sheet.height() / sprite_height;
         println!("Creating spritesheet. total: {},{}, sprite: {},{}, sheet:{},{}",
-            sheet.width(), sheet.height(), sprite_width, sprite_height, sheet_width, sheet_height);
+                 sheet.width(), sheet.height(), sprite_width, sprite_height, sheet_width, sheet_height);
         SpriteSheet {
             sheet,
             sprite_width,

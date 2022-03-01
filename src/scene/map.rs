@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
-use sdl2::libc::read;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 
@@ -83,8 +82,9 @@ impl<'tx> MapScene<'tx> {
                 );
 
                 self.tiles.get_tile(*value)
-                    .map(|tile_rect| {
-                        canvas.copy(tile_rect.texture().texture(), tile_rect.rect(), dst);
+                    .and_then(|tile_rect| {
+                        canvas.copy(tile_rect.texture().texture(), tile_rect.rect(), dst)?;
+                        Ok(())
                     })?;
             }
         }
@@ -137,27 +137,8 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 
 impl<'tx, T: RenderTarget> Scene<'tx, T> for MapScene<'tx> {
     fn draw(&mut self, canvas: &mut Canvas<T>) -> Result<(), Error> {
-        let size = 20;
-
         self.print(LAYER_1, canvas)?;
         self.print(LAYER_2, canvas)?;
-        //
-        //
-        // for x in 0..size {
-        //     for y in 0..size {
-        //         let dst = Rect::new(
-        //             (x * self.tiles.tile_width()) as i32,
-        //             (y * self.tiles.tile_height()) as i32,
-        //             self.tiles.tile_width(),
-        //             self.tiles.tile_height(),
-        //         );
-        //         self.tiles.get_tile(x + y * size)
-        //             .map(|tile_rect| {
-        //                 canvas.copy(tile_rect.texture().texture(), tile_rect.rect(), dst);
-        //             });
-        //     }
-        // }
-
 
         let src = Rect::new(0, 0, 16, 32);
         let dst = Rect::new(self.x as i32, self.y as i32, 32, 64);

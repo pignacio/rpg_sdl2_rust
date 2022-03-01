@@ -12,7 +12,7 @@ pub enum Error {
 
 impl Error {
     pub fn simple<T: AsRef<str>>(message: T) -> Self {
-        Error::Simple {message: message.as_ref().to_owned()}
+        Error::Simple { message: message.as_ref().to_owned() }
     }
 
     pub fn with_path<P: AsRef<Path>>(self, path: P) -> Error {

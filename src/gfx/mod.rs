@@ -1,4 +1,5 @@
 use std::rc::Rc;
+
 use sdl2::rect::Rect;
 
 use crate::gfx::texture::Texture;
