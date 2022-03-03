@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
-use sdl2::event::Event;
-use sdl2::keyboard::{Keycode, Scancode};
+use sdl2::keyboard::Keycode;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 
-use crate::{Error, EventListener, EventResult, GameState, InputState, Resources, Scene};
+use crate::{Error, Event, EventListener, EventResult, GameState, InputState, Point, Resources, Scene};
 use crate::gfx::texture::Texture;
 use crate::gfx::tileset::Tileset;
+use crate::keymap::Action;
 
 pub type Layer<T> = Vec<Vec<T>>;
 pub type Tiles<T> = Vec<Layer<T>>;
@@ -16,8 +16,7 @@ pub struct MapScene<'tx> {
     character: Rc<Texture<'tx>>,
     tileset: Rc<Tileset<'tx>>,
     tiles: Tiles<u32>,
-    x: f32,
-    y: f32,
+    character_position: Point<f32>,
     sprite_x: u32,
     sprite_y: u32,
 }
@@ -69,19 +68,19 @@ pub const LAYER_2: [[u32; 20]; 20] = [
 ];
 
 pub fn to_vec(layer: &[[u32; 20]; 20]) -> Vec<Vec<u32>> {
-   layer.iter().map(|row| row.to_vec()).collect()
+    layer.iter().map(|row| row.to_vec()).collect()
 }
 
 impl<'tx> MapScene<'tx> {
     pub fn new(character: Rc<Texture<'tx>>, tileset: Rc<Tileset<'tx>>, tiles: Vec<Vec<Vec<u32>>>) -> Self {
-        MapScene { character, tileset, tiles, x: 0., y: 0., sprite_x: 0, sprite_y: 0 }
+        MapScene { character, tileset, tiles, character_position: Point::new(0., 0.), sprite_x: 0, sprite_y: 0 }
     }
 
     pub fn old_new(character: Rc<Texture<'tx>>, tileset: Rc<Tileset<'tx>>) -> Self {
         let mut tiles = Vec::new();
         tiles.push(to_vec(&LAYER_1));
         tiles.push(to_vec(&LAYER_2));
-        MapScene { character, tileset, tiles: tiles, x: 0., y: 0., sprite_x: 0, sprite_y: 0 }
+        MapScene { character, tileset, tiles: tiles, character_position: Point::new(0., 0.), sprite_x: 0, sprite_y: 0 }
     }
 
     fn print<T: RenderTarget>(&self, layer: &Vec<Vec<u32>>, canvas: &mut Canvas<T>) -> Result<(), Error> {
@@ -105,23 +104,24 @@ impl<'tx> MapScene<'tx> {
     }
 }
 
+
 impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
     fn process_event(&mut self, _state: &mut GameState, event: &Event) -> Option<EventResult<'tx, T>> {
         match event {
-            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => Some(EventResult::PopScene),
-            Event::KeyDown { keycode: Some(Keycode::A), .. } => {
+            Event::ActionDown { action: Action::Back } => Some(EventResult::PopScene),
+            Event::ActionDown { action: Action::Left } => {
                 if self.sprite_x > 0 { self.sprite_x -= 1; }
                 None
             }
-            Event::KeyDown { keycode: Some(Keycode::D), .. } => {
+            Event::ActionDown { action: Action::Right } => {
                 self.sprite_x += 1;
                 None
             }
-            Event::KeyDown { keycode: Some(Keycode::S), .. } => {
+            Event::ActionDown { action: Action::Down }  => {
                 self.sprite_y += 1;
                 None
             }
-            Event::KeyDown { keycode: Some(Keycode::W), .. } => {
+            Event::ActionDown { action: Action::Up }  => {
                 if self.sprite_y > 0 { self.sprite_y -= 1; }
                 None
             }
@@ -132,17 +132,17 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 
     fn batch_end(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'tx, T>> {
         let distance: f32 = state.ticks_to_process as f32 * 0.3;
-        if input.keyboard.is_scancode_pressed(Scancode::Up) {
-            self.y -= distance;
+        if input.is_action_pressed(Action::Up) {
+            self.character_position.y -= distance;
         }
-        if input.keyboard.is_scancode_pressed(Scancode::Down) {
-            self.y += distance;
+        if input.is_action_pressed(Action::Down) {
+            self.character_position.y += distance;
         }
-        if input.keyboard.is_scancode_pressed(Scancode::Left) {
-            self.x -= distance;
+        if input.is_action_pressed(Action::Left) {
+            self.character_position.x -= distance;
         }
-        if input.keyboard.is_scancode_pressed(Scancode::Right) {
-            self.x += distance;
+        if input.is_action_pressed(Action::Right) {
+            self.character_position.x += distance;
         }
         None
     }
@@ -155,7 +155,7 @@ impl<'tx, T: RenderTarget> Scene<'tx, T> for MapScene<'tx> {
         }
 
         let src = Rect::new(0, 0, 16, 32);
-        let dst = Rect::new(self.x as i32, self.y as i32, 32, 64);
+        let dst = Rect::new(self.character_position.x as i32, self.character_position.y as i32, 32, 64);
         canvas.copy(self.character.texture(), Some(src), Some(dst))?;
         Ok(())
     }

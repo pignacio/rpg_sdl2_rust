@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use sdl2::event::Event;
 use sdl2::pixels::Color;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::video::Window;
@@ -10,8 +9,10 @@ use gfx::texture::TextureLoader;
 use crate::data::{Data, GameConfig};
 use crate::data::map::{MapData};
 use crate::error::Error;
-use crate::event::{EventListener, EventResult, GameState, InputState, PumpProcessor, QuitListener};
+use crate::event::{EventListener, EventResult, GameState, PumpProcessor, QuitListener, InputState, Event};
 use crate::gfx::spritesheet::SpriteSheet;
+use crate::keymap::hardcoded_keymap;
+use crate::point::Point;
 use crate::resources::{CachedResources, Resources};
 use crate::scene::{main_menu::MainMenu, Scene};
 
@@ -19,6 +20,8 @@ pub mod data;
 pub mod error;
 pub mod event;
 pub mod gfx;
+pub mod keymap;
+pub mod point;
 pub mod resources;
 pub mod scene;
 pub mod utils;
@@ -45,7 +48,6 @@ fn run() -> Result<(), Error> {
     // data::write_file(data_path.join("config.json"), &config)?;
 
     config.reroot(data_path);
-
     let pump = sdl2.event_pump()?;
     let mut canvas = window.into_canvas()
         .accelerated()
@@ -56,8 +58,10 @@ fn run() -> Result<(), Error> {
     let creator = canvas.texture_creator();
     let loader = TextureLoader::new(&creator);
     let resources = CachedResources::new(loader, &ttf);
-
     let mut state = GameState::new(resources);
+
+    let fortune = state.resources.load_texture(&data_path.join("045-Fortuneteller01.png"));
+
 
     let mut listeners: Vec<Box<dyn EventListener<Window>>> = Vec::new();
     listeners.push(Box::new(QuitListener {}));
@@ -71,7 +75,8 @@ fn run() -> Result<(), Error> {
     let mut frame_count = 0;
     let mut last_frames = [0u32; 500];
     let mut last_ticks = timer.ticks();
-    let mut pump_processor = PumpProcessor::new(pump);
+    let key_map = hardcoded_keymap();
+    let mut pump_processor = PumpProcessor::new(pump, key_map);
     while state.running {
         let current_ticks = timer.ticks();
         state.ticks_to_process = current_ticks - last_ticks;

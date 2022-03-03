@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
-use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::ttf::Font;
 
-use crate::{Error, EventListener, EventResult, GameState, MapData, Resources, Scene};
+use crate::{Error, Event, EventListener, EventResult, GameState, MapData, Resources, Scene};
+use crate::keymap::Action;
 use crate::scene::map::MapScene;
 
 #[derive(PartialEq)]
@@ -48,13 +48,13 @@ impl<'ttf> MainMenu<'ttf> {
 impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
     fn process_event(&mut self, state: &mut GameState<'ttf>, event: &Event) -> Option<EventResult<'ttf, T>> {
         match event {
-            Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
+            Event::ActionDown { action: Action::Up } => {
                 self.selected_option -= 1;
             }
-            Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
+            Event::ActionDown { action: Action::Down } => {
                 self.selected_option += 1;
             }
-            Event::KeyDown { keycode: Some(Keycode::Return | Keycode::KpEnter), .. } => {
+            Event::ActionDown { action: Action::Select } => {
                 match *self.selected_option() {
                     MenuOption::START => {
                         let character = self.map_data.character.load(&mut state.resources).unwrap();
