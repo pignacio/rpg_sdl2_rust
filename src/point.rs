@@ -36,3 +36,9 @@ impl<T: Copy + Mul<Output=T>> Mul<T> for Point<T> {
         Point::new(self.x * rhs, self.y * rhs)
     }
 }
+
+impl Point<f32> {
+    pub fn truncate(&self) -> Point<i32> {
+        Point{ x: self.x as i32, y: self.y as i32 }
+    }
+}

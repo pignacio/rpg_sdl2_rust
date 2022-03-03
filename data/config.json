@@ -1,5 +1,4 @@
 {
-  "character": "character.png",
   "font": {
     "Inline": {
       "path": "CollegiateFLF.ttf",
@@ -20,7 +19,7 @@
     },
     "character": {
       "Inline": {
-        "path": "character.png"
+        "path": "045-Fortuneteller01.png"
       }
     },
     "tiles": {

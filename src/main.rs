@@ -60,9 +60,6 @@ fn run() -> Result<(), Error> {
     let resources = CachedResources::new(loader, &ttf);
     let mut state = GameState::new(resources);
 
-    let fortune = state.resources.load_texture(&data_path.join("045-Fortuneteller01.png"));
-
-
     let mut listeners: Vec<Box<dyn EventListener<Window>>> = Vec::new();
     listeners.push(Box::new(QuitListener {}));
 

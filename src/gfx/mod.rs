@@ -27,4 +27,12 @@ impl<'tx> TextureRect<'tx> {
     pub fn rect(&self) -> Rect {
         self.rect
     }
+
+    pub fn width(&self) -> u32 {
+        self.rect.width()
+    }
+
+    pub fn height(&self) -> u32 {
+        self.rect.height()
+    }
 }

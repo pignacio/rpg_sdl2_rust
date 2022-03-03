@@ -5,7 +5,8 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 use sdl2::ttf::Font;
 
-use crate::{Error, Event, EventListener, EventResult, GameState, MapData, Resources, Scene};
+use crate::{Error, Event, EventListener, EventResult, GameState, MapData, Resources, Scene, SpriteSheet};
+use crate::gfx::animation::BasicCharAnimation;
 use crate::keymap::Action;
 use crate::scene::map::MapScene;
 
@@ -60,8 +61,11 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
                 match *self.selected_option() {
                     MenuOption::START => {
                         let character = self.map_data.character.load(&mut state.resources).unwrap();
+                        let sprite_width = character.width() / 4;
+                        let sprite_height = character.height() / 4;
+                        let animation = BasicCharAnimation::new(Rc::new(SpriteSheet::new(character, sprite_width, sprite_height)));
                         let tiles = self.map_data.tileset.load(&mut state.resources).unwrap();
-                        return Some(EventResult::PushScene(Box::new(MapScene::new(character, tiles, self.map_data.tiles.to_tiles()))));
+                        return Some(EventResult::PushScene(Box::new(MapScene::new(animation, tiles, self.map_data.tiles.to_tiles()))));
                     }
                     MenuOption::QUIT => state.running = false,
                     MenuOption::SETTINGS => println!("No settings for you!"),
