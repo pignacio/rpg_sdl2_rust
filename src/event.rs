@@ -1,7 +1,7 @@
 use sdl2::event::Event as SdlEvent;
 use sdl2::EventPump;
 use sdl2::keyboard::{KeyboardState, Keycode};
-use sdl2::render::{RenderTarget};
+use sdl2::render::RenderTarget;
 use sdl2::video::WindowContext;
 
 use crate::{CachedResources, Scene};
@@ -15,8 +15,8 @@ pub struct PumpProcessor {
 #[derive(Debug, Clone)]
 pub enum Event {
     Sdl(SdlEvent),
-    ActionDown {action: Action},
-    ActionUp {action: Action},
+    ActionDown { action: Action },
+    ActionUp { action: Action },
 }
 
 impl PumpProcessor {
@@ -30,8 +30,8 @@ impl PumpProcessor {
 
         for sdl_event in self.pump.poll_iter() {
             let event = match sdl_event {
-                SdlEvent::KeyDown { scancode: Some(scancode), ..} => self.key_map.get_action(&scancode).map(|action| Event::ActionDown {action: *action}),
-                SdlEvent::KeyUp { scancode: Some(scancode), ..} => self.key_map.get_action(&scancode).map(|action| Event::ActionUp {action: *action}),
+                SdlEvent::KeyDown { scancode: Some(scancode), .. } => self.key_map.get_action(&scancode).map(|action| Event::ActionDown { action: *action }),
+                SdlEvent::KeyUp { scancode: Some(scancode), .. } => self.key_map.get_action(&scancode).map(|action| Event::ActionUp { action: *action }),
                 _ => Some(Event::Sdl(sdl_event)),
             };
             event.and_then(|e| listener.process_event(state, &e));
@@ -43,12 +43,6 @@ impl PumpProcessor {
 
     fn get_input_state(&self) -> InputState {
         InputState::new(SdlInputState::from(&self.pump), &self.key_map)
-    }
-
-    fn get_event(&self, sdl_event: SdlEvent) -> Event {
-        match sdl_event {
-            _ => Event::Sdl(sdl_event),
-        }
     }
 }
 
@@ -76,7 +70,7 @@ pub struct InputState<'r> {
 
 impl<'r> InputState<'r> {
     pub fn new(sdl_state: SdlInputState<'r>, key_map: &'r KeyMap) -> Self {
-        InputState{sdl_state, key_map}
+        InputState { sdl_state, key_map }
     }
 
     pub fn is_action_pressed(&self, action: Action) -> bool {
@@ -115,7 +109,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for QuitListener {
     fn process_event(&mut self, state: &mut GameState<'ttf>, event: &Event) -> Option<EventResult<'ttf, T>> {
         match event {
             Event::Sdl(SdlEvent::Quit { .. }
-            | SdlEvent::KeyDown {
+                       | SdlEvent::KeyDown {
                 keycode: Some(Keycode::Q),
                 ..
             }) => {

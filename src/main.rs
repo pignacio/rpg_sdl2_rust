@@ -121,10 +121,6 @@ impl<'ttf, T: RenderTarget> SceneStack<'ttf, T> {
 }
 
 impl<'ttf, T: RenderTarget> SceneStack<'ttf, T> {
-    fn active_scene(&self) -> &dyn Scene<'ttf, T> {
-        self.stack.last().unwrap().as_ref()
-    }
-
     fn active_scene_mut(&mut self) -> &mut dyn Scene<'ttf, T> {
         self.stack.last_mut().unwrap().as_mut()
     }

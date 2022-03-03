@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
@@ -53,6 +52,9 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
             }
             Event::ActionDown { action: Action::Down } => {
                 self.selected_option += 1;
+            }
+            Event::ActionDown { action: Action::Back } => {
+                state.running = false;
             }
             Event::ActionDown { action: Action::Select } => {
                 match *self.selected_option() {
