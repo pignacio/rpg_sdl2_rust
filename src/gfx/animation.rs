@@ -4,20 +4,14 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 
 use crate::{Error, Point, SpriteSheet};
-
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+use crate::direction::{CardinalDirection, Direction};
 
 pub trait Ticker {
     fn advance(&mut self, ticks: u32);
     fn reset(&mut self);
 }
 
-pub trait Animation<T: RenderTarget> : Ticker {
+pub trait Animation<T: RenderTarget>: Ticker {
     fn draw_at(&self, canvas: &mut Canvas<T>, dest: Point<i32>) -> Result<(), Error>;
 }
 
@@ -29,13 +23,13 @@ pub trait Oriented {
 
 pub struct BasicCharAnimation<'sdl> {
     sheet: Rc<SpriteSheet<'sdl>>,
-    current_direction: Direction,
+    current_direction: CardinalDirection,
     ticks: u32,
 }
 
 impl<'sdl> BasicCharAnimation<'sdl> {
     pub fn new(sheet: Rc<SpriteSheet<'sdl>>) -> Self {
-        BasicCharAnimation { sheet, current_direction: Direction::Down, ticks: 0 }
+        BasicCharAnimation { sheet, current_direction: CardinalDirection::Down, ticks: 0 }
     }
 }
 
@@ -43,10 +37,10 @@ impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> {
     fn draw_at(&self, canvas: &mut Canvas<T>, dest: Point<i32>) -> Result<(), Error> {
         let sprite_x = (self.ticks / 200) % self.sheet.sheet_width();
         let sprite_y = match self.current_direction {
-            Direction::Up => 3,
-            Direction::Down => 0,
-            Direction::Left => 1,
-            Direction::Right => 2,
+            CardinalDirection::Up => 3,
+            CardinalDirection::Down => 0,
+            CardinalDirection::Left => 1,
+            CardinalDirection::Right => 2,
         };
 
         let texture_rect = self.sheet.get_sprite(sprite_x, sprite_y)?;
@@ -67,6 +61,8 @@ impl<'sdl> Ticker for BasicCharAnimation<'sdl> {
 
 impl<'sdl> Oriented for BasicCharAnimation<'sdl> {
     fn point_to(&mut self, direction: Direction) {
-        self.current_direction = direction;
+        if !direction.is_close_to(&self.current_direction.to_direction()) {
+            self.current_direction = direction.to_cardinal();
+        }
     }
 }

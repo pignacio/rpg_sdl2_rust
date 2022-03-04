@@ -17,6 +17,7 @@ use crate::resources::{CachedResources, Resources};
 use crate::scene::{main_menu::MainMenu, Scene};
 
 pub mod data;
+pub mod direction;
 pub mod error;
 pub mod event;
 pub mod gfx;

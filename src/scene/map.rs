@@ -4,9 +4,11 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, RenderTarget};
 
 use crate::{Error, Event, EventListener, EventResult, GameState, InputState, Point, Resources, Scene};
-use crate::gfx::animation::{Animation, BasicCharAnimation, Direction, Oriented, Ticker};
+use crate::direction::Direction;
+use crate::gfx::animation::{Animation, BasicCharAnimation, Oriented, Ticker};
 use crate::gfx::tileset::Tileset;
 use crate::keymap::Action;
+use crate::point::IntPoint;
 
 pub type Layer<T> = Vec<Vec<T>>;
 pub type Tiles<T> = Vec<Layer<T>>;
@@ -48,12 +50,17 @@ impl<'tx> MapScene<'tx> {
         }
         Ok(())
     }
+
+    const ACTION_TO_DIRECTION: [(Action, Direction); 4] = [
+        (Action::Up, Direction::Up),
+        (Action::Down, Direction::Down),
+        (Action::Left, Direction::Left),
+        (Action::Right, Direction::Right),
+    ];
 }
 
 
 impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
-
-
     fn process_event(&mut self, _state: &mut GameState, event: &Event) -> Option<EventResult<'tx, T>> {
         match event {
             Event::ActionDown { action: Action::Back } => Some(EventResult::PopScene),
@@ -79,31 +86,19 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 
 
     fn batch_end(&mut self, state: &mut GameState, input: &InputState) -> Option<EventResult<'tx, T>> {
-        let distance: f32 = state.ticks_to_process as f32 * 0.3;
-        let mut moving = false;
-        if input.is_action_pressed(Action::Up) {
-            self.character_position.y -= distance;
-            self.character.point_to(Direction::Up);
-            moving = true;
-        }
-        if input.is_action_pressed(Action::Down) {
-            self.character_position.y += distance;
-            self.character.point_to(Direction::Down);
-            moving = true;
-        }
-        if input.is_action_pressed(Action::Left) {
-            self.character_position.x -= distance;
-            self.character.point_to(Direction::Left);
-            moving = true;
-        }
-        if input.is_action_pressed(Action::Right) {
-            self.character_position.x += distance;
-            self.character.point_to(Direction::Right);
-            moving = true;
+        let mut direction_point = IntPoint::new(0, 0);
+        for (action, direction) in MapScene::ACTION_TO_DIRECTION {
+            if input.is_action_pressed(action) {
+                direction_point += direction.to_unit_integer_point();
+            }
         }
 
-        if moving {
+        if let Some(direction) = direction_point.direction() {
+            // We are moving
             self.character.advance(state.ticks_to_process);
+            self.character.point_to(direction);
+            let distance: f32 = state.ticks_to_process as f32 * 0.3;
+            self.character_position += direction.to_unit_point().invert_y() * distance;
         } else {
             self.character.reset();
         }
