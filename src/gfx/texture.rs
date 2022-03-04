@@ -15,6 +15,10 @@ impl<'r> Texture<'r> {
         &self.texture
     }
 
+    pub fn texture_mut(&mut self) -> &'r mut sdl2::render::Texture {
+        &mut self.texture
+    }
+
     pub fn height(&self) -> u32 {
         self.height
     }
@@ -48,5 +52,16 @@ impl<'tx, T> TextureLoader<'tx, T> {
             height,
             width,
         })
+    }
+
+    pub fn create_target_texture(&self, width: u32, height: u32) -> Result<Texture<'tx>, Error> {
+        let texture = self.texture_creator.create_texture_target(None, width, height)?;
+
+        Ok(Texture{
+            texture,
+            width,
+            height,
+        })
+
     }
 }

@@ -2,12 +2,14 @@ use std::rc::Rc;
 
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::{Canvas, RenderTarget};
+use sdl2::render::RenderTarget;
 use sdl2::ttf::Font;
 
 use crate::{Error, Event, EventListener, EventResult, GameState, MapData, Resources, Scene, SpriteSheet};
 use crate::gfx::animation::BasicCharAnimation;
+use crate::gfx::renderer::Renderer;
 use crate::keymap::Action;
+use crate::point::IntPoint;
 use crate::scene::map::MapScene;
 
 #[derive(PartialEq)]
@@ -78,12 +80,14 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for MainMenu<'ttf> {
 }
 
 impl<'ttf, T: RenderTarget> Scene<'ttf, T> for MainMenu<'ttf> {
-    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
-        for (index, option) in MENU_OPTIONS.iter().enumerate() {
-            let surface = self.font.render(option.text()).blended(if option == self.selected_option() { Color::RED } else { Color::WHITE })?;
-            let texture = resources.texture_from_surface(surface)?;
-            canvas.copy(texture.texture(), None, Rect::new(300, 300 + 50 * (index as i32), texture.width(), texture.height()))?;
-        }
-        Ok(())
+    fn draw(&mut self, renderer: &mut Renderer<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
+        renderer.with_offset(IntPoint::new(300, 300), |renderer| {
+            for (index, option) in MENU_OPTIONS.iter().enumerate() {
+                let surface = self.font.render(option.text()).blended(if option == self.selected_option() { Color::RED } else { Color::WHITE })?;
+                let texture = resources.texture_from_surface(surface)?;
+                renderer.copy(&texture, None, Rect::new(0, 50 * (index as i32), texture.width(), texture.height()))?;
+            }
+            Ok(())
+        })
     }
 }

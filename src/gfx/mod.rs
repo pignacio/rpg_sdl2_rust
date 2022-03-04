@@ -5,8 +5,9 @@ use sdl2::rect::Rect;
 use crate::gfx::texture::Texture;
 
 pub mod animation;
-pub mod texture;
+pub mod renderer;
 pub mod spritesheet;
+pub mod texture;
 pub mod tileset;
 
 

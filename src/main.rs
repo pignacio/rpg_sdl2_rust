@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use sdl2::pixels::Color;
-use sdl2::render::{Canvas, RenderTarget};
+use sdl2::render::RenderTarget;
 use sdl2::video::Window;
 
 use gfx::texture::TextureLoader;
@@ -10,6 +10,7 @@ use crate::data::{Data, GameConfig};
 use crate::data::map::{MapData};
 use crate::error::Error;
 use crate::event::{EventListener, EventResult, GameState, PumpProcessor, QuitListener, InputState, Event};
+use crate::gfx::renderer::{BackBuffer, Renderer};
 use crate::gfx::spritesheet::SpriteSheet;
 use crate::keymap::hardcoded_keymap;
 use crate::point::Point;
@@ -50,14 +51,15 @@ fn run() -> Result<(), Error> {
 
     config.reroot(data_path);
     let pump = sdl2.event_pump()?;
-    let mut canvas = window.into_canvas()
+    let canvas = window.into_canvas()
         .accelerated()
-        .present_vsync()
+        // .present_vsync()
         .build()
         .map_err(|e| e.to_string())?;
 
     let creator = canvas.texture_creator();
     let loader = TextureLoader::new(&creator);
+    let mut back_buffer = BackBuffer::new(canvas, &creator)?;
     let resources = CachedResources::new(loader, &ttf);
     let mut state = GameState::new(resources);
 
@@ -83,14 +85,15 @@ fn run() -> Result<(), Error> {
         }
         last_ticks = current_ticks;
 
-        canvas.set_draw_color(Color::BLACK);
-        canvas.clear();
 
         pump_processor.process_events(&mut state, &mut scene_stack);
+        back_buffer.render_and_flip(|renderer| {
+            renderer.set_draw_color(Color::BLACK);
+            renderer.clear();
+            scene_stack.draw(renderer, &mut state.resources)?;
+            Ok(())
+        })?;
 
-        scene_stack.draw(&mut canvas, &mut state.resources)?;
-
-        canvas.present();
         frame_count += 1;
         if frame_count % last_frames.len() == 0 {
             let sum: u32 = last_frames.iter().sum();
@@ -155,7 +158,7 @@ impl<'ttf, T: RenderTarget> EventListener<'ttf, T> for SceneStack<'ttf, T> {
 }
 
 impl<'ttf, T: RenderTarget> Scene<'ttf, T> for SceneStack<'ttf, T> {
-    fn draw(&mut self, canvas: &mut Canvas<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
-        self.active_scene_mut().draw(canvas, resources)
+    fn draw(&mut self, renderer: &mut Renderer<T>, resources: &mut dyn Resources<'ttf>) -> Result<(), Error> {
+        self.active_scene_mut().draw(renderer, resources)
     }
 }

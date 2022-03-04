@@ -29,6 +29,12 @@ impl From<String> for Error {
     }
 }
 
+impl ToString for Error {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
 macro_rules! from_impl {
     ($t:ty) => {
         impl From<$t> for Error {
@@ -43,4 +49,5 @@ from_impl![serde_json::Error];
 from_impl![bincode::Error];
 from_impl![std::io::Error];
 from_impl![sdl2::render::TextureValueError];
+from_impl![sdl2::render::TargetRenderError];
 from_impl![sdl2::ttf::FontError];

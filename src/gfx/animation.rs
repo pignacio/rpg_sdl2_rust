@@ -1,10 +1,11 @@
 use std::rc::Rc;
 
 use sdl2::rect::Rect;
-use sdl2::render::{Canvas, RenderTarget};
+use sdl2::render::RenderTarget;
 
 use crate::{Error, Point, SpriteSheet};
 use crate::direction::{CardinalDirection, Direction};
+use crate::gfx::renderer::Renderer;
 
 pub trait Ticker {
     fn advance(&mut self, ticks: u32);
@@ -12,7 +13,7 @@ pub trait Ticker {
 }
 
 pub trait Animation<T: RenderTarget>: Ticker {
-    fn draw_at(&self, canvas: &mut Canvas<T>, dest: Point<i32>) -> Result<(), Error>;
+    fn draw_at(&self, renderer: &mut Renderer<T>, dest: Point<i32>) -> Result<(), Error>;
 }
 
 
@@ -34,7 +35,7 @@ impl<'sdl> BasicCharAnimation<'sdl> {
 }
 
 impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> {
-    fn draw_at(&self, canvas: &mut Canvas<T>, dest: Point<i32>) -> Result<(), Error> {
+    fn draw_at(&self, renderer: &mut Renderer<T>, dest: Point<i32>) -> Result<(), Error> {
         let sprite_x = (self.ticks / 200) % self.sheet.sheet_width();
         let sprite_y = match self.current_direction {
             CardinalDirection::Up => 3,
@@ -45,7 +46,7 @@ impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> {
 
         let texture_rect = self.sheet.get_sprite(sprite_x, sprite_y)?;
         let dest_rect = Rect::new(dest.x - texture_rect.width() as i32 / 2, dest.y - texture_rect.height() as i32, texture_rect.width(), texture_rect.height());
-        Ok(canvas.copy(texture_rect.texture().texture(), texture_rect.rect(), dest_rect)?)
+        Ok(renderer.copy(texture_rect.texture(), texture_rect.rect(), dest_rect)?)
     }
 }
 

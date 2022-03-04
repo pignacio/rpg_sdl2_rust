@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
 use sdl2::rect::Rect;
-use sdl2::render::{Canvas, RenderTarget};
+use sdl2::render::RenderTarget;
 
 use crate::{Error, Event, EventListener, EventResult, GameState, InputState, Point, Resources, Scene};
 use crate::direction::Direction;
 use crate::gfx::animation::{Animation, BasicCharAnimation, Oriented, Ticker};
+use crate::gfx::renderer::Renderer;
 use crate::gfx::tileset::Tileset;
 use crate::keymap::Action;
 use crate::point::IntPoint;
@@ -31,7 +32,7 @@ impl<'tx> MapScene<'tx> {
         MapScene { character, tileset, tiles, character_position: Point::new(16., 64.), sprite_x: 0, sprite_y: 0 }
     }
 
-    fn print<T: RenderTarget>(&self, layer: &Vec<Vec<u32>>, canvas: &mut Canvas<T>) -> Result<(), Error> {
+    fn print<T: RenderTarget>(&self, layer: &Vec<Vec<u32>>, renderer: &mut Renderer<T>) -> Result<(), Error> {
         for (y, row) in layer.iter().enumerate() {
             for (x, value) in row.iter().enumerate() {
                 let dst = Rect::new(
@@ -43,7 +44,7 @@ impl<'tx> MapScene<'tx> {
 
                 self.tileset.get_tile(*value)
                     .and_then(|tile_rect| {
-                        canvas.copy(tile_rect.texture().texture(), tile_rect.rect(), dst)?;
+                        renderer.copy(tile_rect.texture(), tile_rect.rect(), dst)?;
                         Ok(())
                     })?;
             }
@@ -108,12 +109,12 @@ impl<'tx, T: RenderTarget> EventListener<'tx, T> for MapScene<'tx> {
 }
 
 impl<'tx, T: RenderTarget> Scene<'tx, T> for MapScene<'tx> {
-    fn draw(&mut self, canvas: &mut Canvas<T>, _resources: &mut dyn Resources<'tx>) -> Result<(), Error> {
+    fn draw(&mut self, renderer: &mut Renderer<T>, _resources: &mut dyn Resources<'tx>) -> Result<(), Error> {
         for layer in &self.tiles {
-            self.print(layer, canvas)?;
+            self.print(layer, renderer)?;
         }
 
-        self.character.draw_at(canvas, self.character_position.truncate())?;
+        self.character.draw_at(renderer, self.character_position.truncate())?;
         Ok(())
     }
 }
