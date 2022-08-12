@@ -79,19 +79,22 @@ impl<'sdl> BackBuffer<'sdl> {
         })
     }
 
-    pub fn render_and_flip<F>(&mut self, render_function: F) -> Result<(), Error>
+    pub fn render_and_flip<F>(&mut self, use_back_buffer: bool, render_function: F) -> Result<(), Error>
     where F: FnOnce(&mut Renderer<Window>) -> Result<(), Error>
     {
         let mut renderer = Renderer::new(&mut self.canvas);
-
-        renderer.with_target_texture(&mut self.back_buffer, render_function)?;
+        if use_back_buffer {
+            renderer.with_target_texture(&mut self.back_buffer, render_function)?;
+            self.canvas.copy(&self.back_buffer, None, None)?;
+        } else {
+            render_function(&mut renderer)?;
+        }
 
         // self.canvas.with_texture_canvas(&mut self.back_buffer_2, |canvas| {
         //    let mut renderer = Renderer::new(canvas);
         //     render_function(&mut renderer).unwrap();
         // });
 
-        self.canvas.copy(&self.back_buffer, None, None)?;
         self.canvas.present();
         Ok(())
     }

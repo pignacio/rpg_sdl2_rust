@@ -12,8 +12,12 @@ pub trait Ticker {
     fn reset(&mut self);
 }
 
-pub trait Animation<T: RenderTarget>: Ticker {
+pub trait Drawable<T: RenderTarget> {
     fn draw_at(&self, renderer: &mut Renderer<T>, dest: Point<i32>) -> Result<(), Error>;
+}
+
+pub trait Animation<T: RenderTarget>: Ticker + Drawable<T> {
+
 }
 
 
@@ -34,7 +38,7 @@ impl<'sdl> BasicCharAnimation<'sdl> {
     }
 }
 
-impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> {
+impl<'sdl, T: RenderTarget> Drawable<T> for BasicCharAnimation<'sdl> {
     fn draw_at(&self, renderer: &mut Renderer<T>, dest: Point<i32>) -> Result<(), Error> {
         let sprite_x = (self.ticks / 200) % self.sheet.sheet_width();
         let sprite_y = match self.current_direction {
@@ -49,6 +53,8 @@ impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> {
         Ok(renderer.copy(texture_rect.texture(), texture_rect.rect(), dest_rect)?)
     }
 }
+
+impl<'sdl, T: RenderTarget> Animation<T> for BasicCharAnimation<'sdl> { }
 
 impl<'sdl> Ticker for BasicCharAnimation<'sdl> {
     fn advance(&mut self, ticks: u32) {

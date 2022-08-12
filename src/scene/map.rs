@@ -5,7 +5,7 @@ use sdl2::render::RenderTarget;
 
 use crate::{Error, Event, EventListener, EventResult, GameState, InputState, Point, Resources, Scene};
 use crate::direction::Direction;
-use crate::gfx::animation::{Animation, BasicCharAnimation, Oriented, Ticker};
+use crate::gfx::animation::{BasicCharAnimation, Drawable, Oriented, Ticker};
 use crate::gfx::renderer::Renderer;
 use crate::gfx::tileset::Tileset;
 use crate::keymap::Action;

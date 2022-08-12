@@ -1,21 +1,27 @@
 use std::path::Path;
+use std::rc::Rc;
 
 use sdl2::pixels::Color;
 use sdl2::render::RenderTarget;
+use sdl2::ttf::Font;
 use sdl2::video::Window;
 
 use gfx::texture::TextureLoader;
 
 use crate::data::{Data, GameConfig};
-use crate::data::map::{MapData};
+use crate::data::map::MapData;
+use crate::data::text::{TextBitData, TextLineData};
 use crate::error::Error;
-use crate::event::{EventListener, EventResult, GameState, PumpProcessor, QuitListener, InputState, Event};
+use crate::event::{Event, EventListener, EventResult, GameState, InputState, PumpProcessor, QuitListener};
+use crate::gfx::animation::{Drawable, Ticker};
 use crate::gfx::renderer::{BackBuffer, Renderer};
 use crate::gfx::spritesheet::SpriteSheet;
+use crate::gfx::texture::Texture;
 use crate::keymap::hardcoded_keymap;
 use crate::point::Point;
 use crate::resources::{CachedResources, Resources};
 use crate::scene::{main_menu::MainMenu, Scene};
+use crate::text::{BitState, RenderedTextBit, RenderedTextLine};
 
 pub mod data;
 pub mod direction;
@@ -26,6 +32,7 @@ pub mod keymap;
 pub mod point;
 pub mod resources;
 pub mod scene;
+pub mod text;
 pub mod utils;
 
 fn main() {
@@ -53,7 +60,7 @@ fn run() -> Result<(), Error> {
     let pump = sdl2.event_pump()?;
     let canvas = window.into_canvas()
         .accelerated()
-        // .present_vsync()
+        .present_vsync()
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -77,6 +84,9 @@ fn run() -> Result<(), Error> {
     let mut last_ticks = timer.ticks();
     let key_map = hardcoded_keymap();
     let mut pump_processor = PumpProcessor::new(pump, key_map);
+
+    let mut text_line = if let Some(line_data) = config.text_line { Some(load_text_line(line_data, &mut state.resources)?) } else { None };
+
     while state.running {
         let current_ticks = timer.ticks();
         state.ticks_to_process = current_ticks - last_ticks;
@@ -87,10 +97,17 @@ fn run() -> Result<(), Error> {
 
 
         pump_processor.process_events(&mut state, &mut scene_stack);
-        back_buffer.render_and_flip(|renderer| {
+        text_line.as_mut().map(|line| {
+            line.advance(state.ticks_to_process);
+        });
+        back_buffer.render_and_flip(false, |renderer| {
             renderer.set_draw_color(Color::BLACK);
             renderer.clear();
             scene_stack.draw(renderer, &mut state.resources)?;
+
+            if let Some(line) = &text_line {
+                line.draw_at(renderer, Point::new(50, 50))?;
+            }
             Ok(())
         })?;
 
@@ -104,6 +121,44 @@ fn run() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn load_text_line<'sdl>(data: TextLineData, resources: &mut dyn Resources<'sdl>) -> Result<RenderedTextLine<'sdl>, Error> {
+    let font = data.font.unwrap().load(resources)?;
+    let bits: Result<Vec<RenderedTextBit>, Error> = data.parts.iter().map(|bit_data| {
+        match bit_data {
+            TextBitData::Text { text, .. } => Some(text),
+            _ => None,
+        }
+    }).flatten()
+        .map(|text| {
+            let texture = render(&font, text, resources)?;
+            // let width = texture.width();
+            let states = build_states(&font, text, 100)?;
+            println!("states for '{}': {:?}", text, states);
+            Ok(RenderedTextBit::new(Rc::new(texture), states))
+        })
+        .collect();
+
+    Ok(RenderedTextLine::new(bits?))
+}
+
+fn render<'sdl>(font: &Rc<Font>, text: &str, resources: & dyn Resources<'sdl>) -> Result<Texture<'sdl>, Error>{
+    font.render(text).blended(Color::WHITE)
+        .map_err(Error::from)
+        .and_then(|s| resources.texture_from_surface(s))
+}
+
+fn build_states(font: &Rc<Font>, text: &str, letter_duration: u32) -> Result<Vec<BitState>, Error> {
+    if text.is_empty() {
+        Ok(vec![BitState { last_frame: letter_duration, position: 0 }])
+    } else {
+        (0..text.len()).map(|index| {
+            let (width, _height) = font.size_of(&text[0..(index)])?;
+            Ok(BitState { last_frame: letter_duration * (index + 1) as u32, position: width })
+        })
+            .collect()
+    }
 }
 
 struct SceneStack<'ttf, T: RenderTarget> {

@@ -80,5 +80,25 @@
         ]
       }
     }
+  },
+  "text_line": {
+    "font": {
+      "Inline": {
+        "path": "CollegiateFLF.ttf",
+        "size": 40
+      }
+    },
+    "parts": [
+      {
+        "Text": {
+          "text": "Hello "
+        }
+      },
+      {
+        "Text": {
+          "text": "World!"
+        }
+      }
+    ]
   }
 }

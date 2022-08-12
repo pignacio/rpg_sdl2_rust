@@ -17,7 +17,7 @@ pub struct TextureRect<'tx> {
 }
 
 impl<'tx> TextureRect<'tx> {
-    fn new(texture: Rc<Texture<'tx>>, rect: Rect) -> Self {
+    pub fn new(texture: Rc<Texture<'tx>>, rect: Rect) -> Self {
         TextureRect { texture, rect }
     }
 

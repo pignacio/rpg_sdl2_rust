@@ -6,24 +6,29 @@ use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 use crate::data::font::FontData;
 use crate::data::map::MapData;
+use crate::data::text::TextLineData;
 
 use crate::error::Error;
 
 pub mod font;
 pub mod gfx;
 pub mod map;
+pub mod text;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameConfig {
     pub font: FontData,
     pub map: MapData,
+    pub text_line: Option<TextLineData>
 }
 
 impl Data for GameConfig {
     fn reroot(&mut self, base_path: &Path) {
         self.font.reroot(base_path);
         self.map.reroot(base_path);
+        self.text_line.reroot(base_path);
     }
+
 }
 
 pub enum Format {
@@ -33,6 +38,12 @@ pub enum Format {
 
 pub trait Data {
     fn reroot(&mut self, base_path: &Path);
+}
+
+impl<T: Data> Data for Option<T> {
+    fn reroot(&mut self, base_path: &Path) {
+        self.as_mut().map(|data| data.reroot(base_path));
+    }
 }
 
 fn join_as_string<P1: AsRef<Path>, P2: AsRef<Path>>(base_path: P1, rel_path: P2) -> String {
